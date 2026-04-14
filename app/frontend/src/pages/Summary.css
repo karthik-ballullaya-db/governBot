@@ -1,0 +1,59 @@
+.summaryChartsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: flex-start;
+}
+
+.summaryChartCell {
+  box-sizing: border-box;
+  flex: 1 1 50rem;
+  /* At least 50rem when the row has room; cap at container width on narrow screens */
+  min-width: min(50rem, 100%);
+  max-width: 100%;
+}
+
+.summaryChartPlot {
+  width: 100%;
+}
+
+.summaryChartPlot--pie {
+  height: 280px;
+}
+
+.summaryChartPlot--bar {
+  height: 260px;
+}
+
+.summaryChartCell .summaryChartPlot {
+  margin-top: 0.5rem;
+}
+
+.summary__filters {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+}
+
+.summary__filtersRow {
+  display: grid;
+  grid-template-columns: 0.25fr 1fr;
+  gap: 1rem;
+  text-align: end;
+}
+
+.summary__filtersRow label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  align-content: center;
+}
+
+.summary__filtersRow select {
+  width: 100%;
+  border-radius: 4px;
+}

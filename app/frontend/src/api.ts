@@ -19,6 +19,14 @@ export async function getConfig(): Promise<AppConfig> {
   return r.json();
 }
 
+export type MeResponse = { email: string; name: string; given_name?: string | null };
+
+export async function getMe(): Promise<MeResponse> {
+  const r = await fetch(`${API_BASE}/api/me`, { headers: headers(), credentials: 'include' });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
 export type SummaryResponse = {
   total: number;
   pending: number;
@@ -85,6 +93,40 @@ export async function addNoteViolation(violationId: string, note: string): Promi
     body: JSON.stringify({ note }),
   });
   if (!r.ok) throw new Error(await r.text());
+}
+
+export async function bulkAcknowledgeViolations(violationIds: string[], note?: string): Promise<void> {
+  const r = await fetch(`${API_BASE}/api/actions/bulk-acknowledge`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ violation_ids: violationIds, note: note ?? '' }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+} 
+
+export type ConfigFormOptions = {
+  workspace_object_types: string[];
+  violation_types: string[];
+  remediation_actions: string[];
+  /** Keys are group names (e.g. ALL, UC_ALL); values are expanded object types (mirrors governbot_core.constants.APPROVED_ACTION_GROUPS). */
+  approved_action_groups: Record<string, string[]>;
+};
+
+let configFormOptionsPromise: Promise<ConfigFormOptions> | null = null;
+
+/** Cached GET /api/configs/form-options (same-origin; headers optional for this route). */
+export function getConfigFormOptionsCached(): Promise<ConfigFormOptions> {
+  if (!configFormOptionsPromise) {
+    const p = fetch(`${API_BASE}/api/configs/form-options`, { headers: headers() }).then(async (r) => {
+      if (!r.ok) throw new Error(await r.text());
+      return (await r.json()) as ConfigFormOptions;
+    });
+    configFormOptionsPromise = p.catch((e) => {
+      configFormOptionsPromise = null;
+      throw e;
+    });
+  }
+  return configFormOptionsPromise;
 }
 
 export async function getWorkspaces(): Promise<{ rows: Record<string, unknown>[] }> {

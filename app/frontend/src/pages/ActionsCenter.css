@@ -1,0 +1,83 @@
+.actionsCenter__title {
+  margin: 0 0 0.5rem 0;
+  font-size: 48px;
+}
+
+.actionsCenter__badgeRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.actionsCenter__countBadge {
+  color: #4cd5f4;
+  font-size: small;
+  background-color: #093348;
+  border-radius: 15px;
+  width: fit-content;
+  font-weight: 700;
+  height: 1.5rem;
+  align-content: center;
+  padding: 0 10px;
+}
+
+.actionsCenter__error {
+  color: #f87171;
+  margin-bottom: 1rem;
+}
+
+.actionsCenter__filters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-radius: 4px;
+  background-color: #121b2e;
+  padding: 2rem 1rem;
+}
+
+.actionsCenter__filterSelect {
+  width: 100%;
+  border-radius: 4px;
+}
+
+.actionsCenter__empty {
+  color: var(--text-muted);
+}
+
+.actionsCenter__dataBlock {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.actionsCenter__dataBlock .dataTable__wrap {
+  border-radius: 10px 10px 0 0;
+}
+
+.actionsCenter__pagination {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  border-radius: 0 0 10px 10px;
+}
+
+.actionsCenter__paginationControls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.actionsCenter__pageLabel {
+  letter-spacing: normal;
+}
+
+.actionsCenter__clearFilters__container {
+  align-content: end;
+}

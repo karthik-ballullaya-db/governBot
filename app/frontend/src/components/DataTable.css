@@ -1,0 +1,73 @@
+.dataTable__wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable__theadRow {
+  border-bottom: 1px solid #334155;
+  background-color: #222a3d;
+}
+
+.dataTable__th {
+  text-align: left;
+  padding: 0.5rem;
+}
+
+.dataTable__th--checkbox {
+  width: 40px;
+}
+
+.dataTable__tbody tr:nth-child(even) {
+  background-color: #181f33;
+}
+
+.dataTable__tbody tr:nth-child(odd) {
+  background-color: #161d31;
+}
+
+.dataTable__tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+.dataTable__row {
+  border-bottom: 1px solid #334155;
+  height: 3.5rem;
+}
+
+.dataTable__row--clickable {
+  cursor: pointer;
+}
+
+.dataTable__row--clickable:hover {
+  filter: brightness(1.06);
+}
+
+.dataTable__td {
+  padding: 0.5rem;
+}
+
+.dataTable__td--status {
+  text-align: center;
+}
+
+.dataTable__checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #37afbf;
+  cursor: pointer;
+}
+
+/* Summary-style compact header (optional) */
+.dataTable__th--muted {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.dataTable__td--compact {
+  font-size: 0.875rem;
+}

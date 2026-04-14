@@ -17,10 +17,29 @@ import {
 } from 'recharts'
 import { getSummary, getSummaryTrend, type SummaryResponse } from '../api'
 import { LoadingIndicator } from '../components/LoadingIndicator'
+import { DataTable, type DataTableColumn } from '../components/DataTable'
+import { StatusPill } from '../components/StatusPill'
+import './Summary.css'
 
 const HOURS_OPTIONS = [6, 12, 24, 48, 72, 360, 720]
 const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#61BA43']
 const REMEDIATION_TYPES = ['ALL', 'AUTOMATED', 'MANUAL']
+
+const SUMMARY_LATEST_COLUMNS: DataTableColumn<Record<string, unknown>>[] = [
+  { id: 'event_time', header: 'Event time', thClassName: 'dataTable__th--muted', tdClassName: 'dataTable__td--compact' },
+  { id: 'violation_type', header: 'Type', thClassName: 'dataTable__th--muted', tdClassName: 'dataTable__td--compact' },
+  { id: 'object_type', header: 'Object type', thClassName: 'dataTable__th--muted', tdClassName: 'dataTable__td--compact' },
+  { id: 'object_name', header: 'Object', thClassName: 'dataTable__th--muted', tdClassName: 'dataTable__td--compact' },
+  { id: 'user_email', header: 'User', thClassName: 'dataTable__th--muted', tdClassName: 'dataTable__td--compact' },
+  {
+    id: 'processing_status',
+    header: 'Status',
+    thClassName: 'dataTable__th--muted',
+    tdClassName: 'dataTable__td--compact dataTable__td--status',
+    cell: (row) => <StatusPill raw={String(row.processing_status ?? '')} />,
+  },
+  { id: 'action_type', header: 'Action type', thClassName: 'dataTable__th--muted', tdClassName: 'dataTable__td--compact' },
+]
 
 export default function Summary() {
   const [hours, setHours] = useState(24)
@@ -48,9 +67,9 @@ export default function Summary() {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-        {loading && <LoadingIndicator size={24} color="white" />}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="summary__filters">
+        {loading ? <LoadingIndicator size={24} color="white" /> : null}
+        <div className="summary__filtersRow">
           <label>Last</label>
           <select value={hours} onChange={(e) => setHours(Number(e.target.value))} style={{ width: 100 }}>
             {HOURS_OPTIONS.map((h) => (
@@ -58,7 +77,7 @@ export default function Summary() {
             ))}
           </select>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="summary__filtersRow">
           <label>Remediation type</label>
           <select value={remediationType} onChange={(e) => setRemediationType(e.target.value)} style={{ width: 100 }}>
             {REMEDIATION_TYPES.map((v) => (
@@ -69,7 +88,7 @@ export default function Summary() {
       </div>
       <h1 style={{ marginTop: 0 }}>Summary</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
-        Violation summary for the last X hours. Set catalog, schema, and warehouse path in Configs.
+        {`Violation summary for the last ${hours} hours. Set catalog, schema, and warehouse path in Configs.`}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 8 }}>
@@ -105,89 +124,78 @@ export default function Summary() {
         <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>No trend data in the selected period.</p>
       )}
       <h2 style={{ marginBottom: '0.5rem' }}>Recent Run Violations</h2>
-      <h3 style={{ marginBottom: '0.5rem' }}>Violations by type</h3>
-      {data.by_type.length > 0 ? (
-        <div style={{ height: 280, marginBottom: '2rem' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data.by_type}
-                dataKey="count"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {data.by_type.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid #334155', color: 'var(--text)', borderRadius: 5 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>No violations in the selected period.</p>
-      )}
-      {data.by_object_type.length > 0 && (
-        <>
-          <h3 style={{ marginBottom: '0.5rem' }}>Violations by object type</h3>
-          <div style={{ height: 260, marginBottom: '2rem' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.by_object_type} margin={{ top: 8, right: 8, left: 8, bottom: 56 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis
-                  dataKey="name"
-                  stroke="#94A3B8"
-                  fontSize={12}
-                  interval={0}
-                  tick={({ x, y, payload }) => (
-                    <Text
-                      x={x}
-                      y={y}
-                      angle={-45}
-                      textAnchor="end"
-                      verticalAnchor="start"
-                      fill="#94A3B8"
-                      fontSize={12}
-                      dx={-8}
-                      dy={4}
-                    >
-                      {String(payload.value ?? '')}
-                    </Text>
-                  )}
-                />
-                <YAxis stroke="#94A3B8" fontSize={12} />
-                <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid #334155', color: 'var(--text)', borderRadius: 5 }} />
-                <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </>
-      )}
+      <div className="summaryChartsRow">
+        <section className="summaryChartCell">
+          <h3 style={{ marginBottom: '0.5rem' }}>Violations by type</h3>
+          {data.by_type.length > 0 ? (
+            <div className="summaryChartPlot summaryChartPlot--pie">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data.by_type}
+                    dataKey="count"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {data.by_type.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid #334155', color: 'var(--text)', borderRadius: 5 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p style={{ color: 'var(--text-muted)', margin: 0 }}>No violations in the selected period.</p>
+          )}
+        </section>
+        {data.by_object_type.length > 0 ? (
+          <section className="summaryChartCell">
+            <h3 style={{ marginBottom: '0.5rem' }}>Violations by object type</h3>
+            <div className="summaryChartPlot summaryChartPlot--bar">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.by_object_type} margin={{ top: 8, right: 8, left: 8, bottom: 56 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94A3B8"
+                    fontSize={12}
+                    interval={0}
+                    tick={({ x, y, payload }) => (
+                      <Text
+                        x={x}
+                        y={y}
+                        angle={-45}
+                        textAnchor="end"
+                        verticalAnchor="start"
+                        fill="#94A3B8"
+                        fontSize={12}
+                        dx={-8}
+                        dy={4}
+                      >
+                        {String(payload.value ?? '')}
+                      </Text>
+                    )}
+                  />
+                  <YAxis stroke="#94A3B8" fontSize={12} />
+                  <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid #334155', color: 'var(--text)', borderRadius: 5 }} />
+                  <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        ) : null}
+      </div>
       <h3 style={{ marginBottom: '0.5rem' }}>Latest violations</h3>
       {data.latest.length > 0 ? (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #334155' }}>
-                {['event_time', 'violation_type', 'object_type', 'object_name', 'user_email', 'processing_status', 'action_type'].map((k) => (
-                  <th key={k} style={{ textAlign: 'left', padding: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{k}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.latest.slice(0, 20).map((row, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
-                  {['event_time', 'violation_type', 'object_type', 'object_name', 'user_email', 'processing_status', 'action_type'].map((k) => (
-                    <td key={k} style={{ padding: '0.5rem', fontSize: '0.875rem' }}>{String((row as Record<string, unknown>)[k] ?? '')}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable<Record<string, unknown>>
+          rows={data.latest.slice(0, 20) as Record<string, unknown>[]}
+          columns={SUMMARY_LATEST_COLUMNS}
+          rowKey={(_, i) => `latest-${i}`}
+        />
       ) : (
         <p style={{ color: 'var(--text-muted)' }}>No rows to show.</p>
       )}

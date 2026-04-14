@@ -5,10 +5,21 @@
   --text: #E2E8F0;
   --text-muted: #94A3B8;
   --bg-light-grey: #d7d8da55;
+
+  /* Scrollbars — same palette as Configs data tables (global) */
+  --scrollbar-track: #2d2d2d;
+  --scrollbar-thumb: #6b6b6b;
+  --scrollbar-thumb-hover: #9c9a9a;
+  --scrollbar-size: 10px;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 body {
@@ -17,6 +28,41 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* WebKit / Chromium — all scrollable areas (tables, modals, panels) */
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid var(--scrollbar-track);
+  min-height: 28px;
+  min-width: 28px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+/* Firefox — scrollable descendants (html/body covered above) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 a {

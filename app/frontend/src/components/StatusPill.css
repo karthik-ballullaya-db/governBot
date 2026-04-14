@@ -1,0 +1,33 @@
+.statusPill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.statusPill--pending {
+  color: #97c2ce;
+  background-color: rgba(151, 194, 206, 0.25);
+}
+
+.statusPill--success {
+  color: #01b7d7;
+  background-color: rgba(1, 183, 215, 0.25);
+}
+
+.statusPill--failed {
+  color: #ee983c;
+  background-color: rgba(238, 152, 60, 0.25);
+}
+
+.statusPill--success-ack {
+  color: #01b7d7;
+  background-color: rgba(1, 183, 215, 0.25);
+}
+
+.statusPill--skipped {
+  color: #94a3b8;
+  background-color: rgba(148, 163, 184, 0.25);
+}

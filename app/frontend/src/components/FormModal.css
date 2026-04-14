@@ -1,0 +1,113 @@
+/* Reusable modal shell + footer actions (matches Configs cyan/navy theme) */
+.formModal {
+  --fm-bg-card: #161b2c;
+  --fm-border: #2a3348;
+  --fm-accent: #26c6da;
+  --fm-accent-text: #0a0e18;
+  --fm-danger-bg: #3d1518;
+  --fm-text: #f1f5f9;
+  --fm-muted: #8b9bb4;
+}
+
+.formModal__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  overscroll-behavior: none;
+}
+
+.formModal__box {
+  background: var(--fm-bg-card);
+  border: 1px solid var(--fm-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+.formModal__title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--fm-text);
+}
+
+.formModal__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  align-items: center;
+}
+
+.formModal__footerSpacer {
+  flex: 1;
+  min-width: 0.5rem;
+}
+
+.formModal__btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: var(--fm-accent);
+  color: var(--fm-accent-text);
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formModal__btnPrimary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.formModal__btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.formModal__btnSecondary {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: #e2e8f0;
+  border: 1px solid var(--fm-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.formModal__btnSecondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.formModal__btnDanger {
+  padding: 0.5rem 1rem;
+  background: var(--fm-danger-bg);
+  color: #fecaca;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.formModal__btnDanger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.formModal__btnDanger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

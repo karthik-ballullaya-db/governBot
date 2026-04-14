@@ -1,0 +1,73 @@
+.btnWithIcon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+}
+
+.btnWithIcon svg {
+  flex-shrink: 0;
+}
+
+.btnWithIcon:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.btnWithIcon--outline-teal {
+  border: 1px solid #37afbf;
+  color: #37afbf;
+  background-color: rgba(55, 175, 191, 0.12);
+}
+
+.btnWithIcon--outline-pink {
+  border: 1px solid #f06292;
+  color: #f06292;
+  background-color: rgba(240, 98, 146, 0.12);
+  margin-left: 8px;
+}
+
+.btnWithIcon--flat-dark {
+  border: none;
+  background-color: #2c344a;
+  color: #f8fafc;
+  margin-left: 8px;
+  padding: 8px 12px;
+}
+
+.btnWithIcon--icon-dismiss {
+  margin-left: auto;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+}
+
+.btnWithIcon--icon-dismiss:hover:not(:disabled) {
+  color: #e2e8f0;
+}
+
+.btnWithIcon--filter-clear {
+  width: 100%;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background-color: #2c344a;
+  color: #c5cfdb;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  margin-left: 0;
+}
+
+.btnWithIcon--filter-clear:hover:not(:disabled) {
+  opacity: 0.9;
+}

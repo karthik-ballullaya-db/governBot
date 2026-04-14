@@ -1,0 +1,40 @@
+/* Sidebar: only the nav list scrolls; ~3.5 items visible (same idea as configs__tableScrollCap) */
+.layout__aside {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 220px;
+  background: var(--bg-secondary);
+  padding: 1.5rem 1rem;
+  border-right: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.layout__brand {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.layout__navScroll {
+  --layout-nav-row-h: 3.5rem; /* one row: padding + icon/text; tweak if NavItem padding changes */
+  max-height: calc(3.5 * var(--layout-nav-row-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-shrink: 1;
+  min-height: 0;
+}
+
+.layout__main {
+  flex: 1;
+  margin-left: 220px;
+  padding: 1.5rem 2rem;
+  overflow: auto;
+  min-height: 100vh;
+}

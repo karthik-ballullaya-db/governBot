@@ -1,5 +1,7 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { getMe, type MeResponse } from '../api'
+import './Layout.css'
 
 const iconStyle = { width: 20, height: 20, flexShrink: 0 }
 
@@ -45,10 +47,11 @@ function NavItem({
         display: 'flex',
         alignItems: 'center',
         gap: '0.5rem',
-        padding: '0.5rem 0.75rem',
-        borderRadius: 6,
-        color: isActive ? 'var(--bg)' : 'var(--text)',
-        background: isActive ? 'var(--primary)' : 'transparent',
+        padding: '1rem 0.75rem',
+        color: isActive ? 'var(--primary)' : 'var(--text)',
+        background: isActive ? '#061424' : 'transparent',
+        borderRight: isActive ? '3px solid var(--primary)' : '3px solid transparent',
+        borderRadius: 3,
         textDecoration: 'none',
       }}
     >
@@ -58,30 +61,91 @@ function NavItem({
   )
 }
 
+function firstNameInitial(me: MeResponse): string {
+  const g = me.given_name?.trim()
+  if (g && g.length > 0) return g[0].toUpperCase()
+  const n = me.name?.trim()
+  if (n) {
+    const first = n.split(/\s+/)[0]
+    if (first.length > 0) return first[0].toUpperCase()
+  }
+  const e = me.email?.trim()
+  if (e) {
+    const local = e.split('@')[0]
+    if (local.length > 0) return local[0].toUpperCase()
+  }
+  return '?'
+}
+
+function UserNavFooter({ me }: { me: MeResponse | null }) {
+  const label = me?.name?.trim() || me?.email?.trim() || 'Not signed in'
+  const sub = me?.email?.trim() && me?.name?.trim() ? me.email : null
+  const initial = me ? firstNameInitial(me) : '?'
+  return (
+    <div
+      style={{
+        marginTop: 'auto',
+        flexShrink: 0,
+        paddingTop: '1rem',
+        borderTop: '1px solid #334155',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.65rem',
+      }}
+    >
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: 'var(--primary)',
+          color: 'var(--bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1rem',
+          fontWeight: 700,
+          flexShrink: 0,
+        }}
+        aria-hidden
+      >
+        {initial}
+      </div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {label}
+        </div>
+        {sub ? (
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {sub}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 export default function Layout({ children }: { children: ReactNode }) {
+  const [me, setMe] = useState<MeResponse | null>(null)
+
+  useEffect(() => {
+    getMe()
+      .then(setMe)
+      .catch(() => setMe(null))
+  }, [])
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: 220,
-        background: 'var(--bg-secondary)',
-        padding: '1.5rem 1rem',
-        borderRight: '1px solid #334155',
-        overflowY: 'auto',
-      }}>
-        <h2 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>🛡️ GovernBot</h2>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <aside className="layout__aside">
+        <h2 className="layout__brand">🛡️ GovernBot</h2>
+        <nav className="layout__navScroll" aria-label="Main navigation">
           <NavItem to="/summary" matchPaths={['/', '/summary']} icon={<IconSummary />} label="Summary" />
           <NavItem to="/actions" matchPaths={['/actions']} icon={<IconActions />} label="Actions Center" />
           <NavItem to="/configs" matchPaths={['/configs']} icon={<IconConfigs />} label="Configs" />
         </nav>
+        <UserNavFooter me={me} />
       </aside>
-      <main style={{ flex: 1, marginLeft: 220, padding: '1.5rem 2rem', overflow: 'auto', minHeight: '100vh' }}>
-        {children}
-      </main>
+      <main className="layout__main">{children}</main>
     </div>
   )
 }

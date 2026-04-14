@@ -1,0 +1,37 @@
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modalPanel {
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  min-width: 360px;
+  border: 1px solid var(--primary);
+}
+
+.modalTitle {
+  margin-top: 0;
+}
+
+.modalDescription {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.modalTextarea {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}

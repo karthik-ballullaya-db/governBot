@@ -1,61 +1,65 @@
 import { useState, useEffect } from 'react'
-import {
-  getConfig,
-  getWorkspaces,
-  getIdentities,
-  getFilters,
-  createWorkspace,
-  updateWorkspace,
-  deleteWorkspace,
-  createIdentity,
-  updateIdentity,
-  deleteIdentity,
-  createFilter,
-  updateFilter,
-  deleteFilter,
-} from '../api'
+import { getConfig, getWorkspaces, getIdentities, getFilters, updateWorkspace } from '../api'
+import { DataTable, type DataTableColumn } from '../components/DataTable'
+import { LoadingIndicator } from '../components/LoadingIndicator'
+import { workspacePayloadFromRow, type WorkspaceRow, type IdentityRow, type FilterRow } from './configsFormUtils'
+import { WorkspaceDialog, IdentityDialog, FilterDialog } from './ConfigsDialogs'
+import './Configs.css'
 
-const dialogOverlay: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.6)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-}
-const dialogBox: React.CSSProperties = {
-  background: 'var(--bg-secondary)',
-  border: '1px solid #334155',
-  borderRadius: 8,
-  padding: '1.5rem',
-  maxWidth: 520,
-  width: '90%',
-  maxHeight: '90vh',
-  overflow: 'auto',
-}
-const formRow: React.CSSProperties = { marginBottom: '0.75rem' }
-const formLabel: React.CSSProperties = { display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }
-const formInput: React.CSSProperties = { width: '100%', padding: '0.5rem', background: 'var(--bg)', border: '1px solid #334155', borderRadius: 4, color: 'var(--text)' }
-const formCheckbox: React.CSSProperties = { marginRight: '0.5rem' }
-const buttonRow: React.CSSProperties = { display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }
-const btnPrimary: React.CSSProperties = { padding: '0.5rem 1rem', background: 'var(--primary)', color: 'var(--bg)', border: 'none', borderRadius: 6, cursor: 'pointer' }
-const btnSecondary: React.CSSProperties = { padding: '0.5rem 1rem', background: 'transparent', color: 'var(--text)', border: '1px solid #334155', borderRadius: 6, cursor: 'pointer' }
-const btnDanger: React.CSSProperties = { padding: '0.5rem 1rem', background: '#7f1d1d', color: '#fecaca', border: 'none', borderRadius: 6, cursor: 'pointer' }
-const tableAction: React.CSSProperties = { marginRight: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.8rem', cursor: 'pointer' }
-
-function arrFrom(val: unknown): string[] {
-  if (Array.isArray(val)) return val.map(String).filter(Boolean)
-  if (typeof val === 'string') return val.split(',').map((s) => s.trim()).filter(Boolean)
-  return []
-}
-function arrToStr(arr: string[]): string {
-  return Array.isArray(arr) ? arr.join(', ') : ''
+function formatIdentityType(t: string): string {
+  return t.replace(/_/g, ' ')
 }
 
-type WorkspaceRow = Record<string, unknown>
-type IdentityRow = Record<string, unknown>
-type FilterRow = Record<string, unknown>
+const ICON_GLOBE = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+)
+const ICON_NETWORK = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+    <circle cx="12" cy="5" r="2.5" />
+    <circle cx="5" cy="19" r="2.5" />
+    <circle cx="19" cy="19" r="2.5" />
+    <path d="M12 7.5v3M7.5 17l3-4M16.5 17l-3-4" />
+  </svg>
+)
+const ICON_FINGERPRINT = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+    <path d="M8.10008 21.221C6.71021 19.2375 5.89258 16.8243 5.89258 14.2187C5.89258 10.8443 8.6265 8.10938 11.9989 8.10938C15.3712 8.10938 18.1051 10.8443 18.1051 14.2187" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M8.10008 21.221C6.71021 19.2375 5.89258 16.8243 5.89258 14.2187C5.89258 10.8443 8.6265 8.10938 11.9989 8.10938C15.3712 8.10938 18.1051 10.8443 18.1051 14.2187" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M18.4359 20.3118C18.3259 20.3179 18.218 20.3281 18.107 20.3281C14.7347 20.3281 12.0007 17.5931 12.0007 14.2188" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M18.4361 20.3118C18.3262 20.3179 18.2182 20.3281 18.1073 20.3281C14.7349 20.3281 12.001 17.5931 12.001 14.2188" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13.2694 21.9999C10.675 20.382 8.94705 17.5024 8.94705 14.2187C8.94705 12.5315 10.3145 11.164 12.0007 11.164C13.6869 11.164 15.0543 12.5315 15.0543 14.2187C15.0543 15.9059 16.4218 17.2733 18.108 17.2733C19.7942 17.2733 21.1616 15.9059 21.1616 14.2187C21.1616 9.1571 17.0602 5.05469 12.0017 5.05469C6.94319 5.05469 2.8418 9.1571 2.8418 14.2187C2.8418 15.3469 2.96806 16.4455 3.20021 17.5045" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M13.2694 21.9999C10.675 20.382 8.94705 17.5024 8.94705 14.2187C8.94705 12.5315 10.3145 11.164 12.0007 11.164C13.6869 11.164 15.0543 12.5315 15.0543 14.2187C15.0543 15.9059 16.4218 17.2733 18.108 17.2733C19.7942 17.2733 21.1616 15.9059 21.1616 14.2187C21.1616 9.1571 17.0602 5.05469 12.0017 5.05469C6.94319 5.05469 2.8418 9.1571 2.8418 14.2187C2.8418 15.3469 2.96806 16.4455 3.20021 17.5045" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20.5257 5.86313C18.4435 3.4978 15.399 2 12.0002 2C8.60136 2 5.55687 3.4978 3.47461 5.86313" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20.5257 5.86313C18.4435 3.4978 15.399 2 12.0002 2C8.60136 2 5.55687 3.4978 3.47461 5.86313" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+)
+const ICON_FILTER = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+    <path d="M4 6h16M7 12h10M10 18h4" />
+  </svg>
+)
+const ICON_PLUS = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+)
+/** Person + plus (matches “authorize identity” control in mock) */
+const ICON_USER_PLUS = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M19 8v6M22 11h-6" />
+  </svg>
+)
+const ICON_COPY = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+)
 
 export default function Configs() {
   const [config, setConfig] = useState({ catalog: '', schema: '', warehouse_http_path: '' })
@@ -69,19 +73,16 @@ export default function Configs() {
   const [idDialog, setIdDialog] = useState<{ open: boolean; mode: 'add' | 'edit'; row?: IdentityRow }>({ open: false, mode: 'add' })
   const [filterDialog, setFilterDialog] = useState<{ open: boolean; mode: 'add' | 'edit'; row?: FilterRow }>({ open: false, mode: 'add' })
 
-  const saveConfig = () => {
-    if (config.catalog) localStorage.setItem('governbot_catalog', config.catalog)
-    if (config.schema) localStorage.setItem('governbot_schema', config.schema)
-    if (config.warehouse_http_path) localStorage.setItem('governbot_warehouse_http_path', config.warehouse_http_path)
-    loadAll()
-  }
-
   const loadAll = () => {
     setLoading(true)
     setError(null)
     getConfig()
       .then((c) => {
-        setConfig({ catalog: c.catalog || '', schema: c.schema || '', warehouse_http_path: c.warehouse_http_path || '' })
+        setConfig({
+          catalog: localStorage.getItem('governbot_catalog') || c.catalog || '',
+          schema: localStorage.getItem('governbot_schema') || c.schema || '',
+          warehouse_http_path: localStorage.getItem('governbot_warehouse_http_path') || c.warehouse_http_path || '',
+        })
         return Promise.all([getWorkspaces(), getIdentities(), getFilters()])
       })
       .then(([ws, id, fl]) => {
@@ -91,6 +92,19 @@ export default function Configs() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
+  }
+
+  const saveConfig = () => {
+    if (config.catalog) localStorage.setItem('governbot_catalog', config.catalog)
+    if (config.schema) localStorage.setItem('governbot_schema', config.schema)
+    if (config.warehouse_http_path) localStorage.setItem('governbot_warehouse_http_path', config.warehouse_http_path)
+    loadAll()
+  }
+
+  const copyWarehousePath = () => {
+    const v = config.warehouse_http_path
+    if (!v) return
+    void navigator.clipboard.writeText(v).catch(() => {})
   }
 
   useEffect(() => {
@@ -106,553 +120,317 @@ export default function Configs() {
       .catch(() => setLoading(false))
   }, [])
 
-  if (loading && !workspaces.length && !identities.length && !filters.length) return <p>Loading...</p>
+  const workspaceColumns: DataTableColumn<WorkspaceRow>[] = [
+    {
+      id: 'workspace_id',
+      header: 'Workspace ID',
+      thClassName: 'configs__th',
+      tdClassName: 'configs__cellAccent',
+    },
+    {
+      id: 'workspace_name',
+      header: 'Workspace name',
+      thClassName: 'configs__th',
+      tdClassName: 'configs__cellStrong',
+    },
+    {
+      id: 'workspace_url',
+      header: 'Deployment URL',
+      thClassName: 'configs__th',
+      tdClassName: 'configs__cellMuted',
+    },
+    {
+      id: 'enforcement_enabled',
+      header: 'Enforcement',
+      thClassName: 'configs__th',
+      cell: (row) => (
+        <span className="configs__interactiveCell" onClick={(e) => e.stopPropagation()} role="presentation">
+          <label className="configs__toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(row.enforcement_enabled)}
+              onChange={(e) => {
+                const wid = String(row.workspace_id ?? '')
+                if (!wid) return
+                updateWorkspace(wid, workspacePayloadFromRow(row, { enforcement_enabled: e.target.checked }))
+                  .then(loadAll)
+                  .catch((err) => setError(err.message))
+              }}
+            />
+            <span className="configs__toggleTrack">
+              <span className="configs__toggleKnob" />
+            </span>
+          </label>
+        </span>
+      ),
+    },
+    {
+      id: 'max_retry_attempts',
+      header: 'Retries',
+      thClassName: 'configs__th',
+      cell: (row) => String(Number(row.max_retry_attempts) || 0),
+    },
+  ]
+
+  const identityColumns: DataTableColumn<IdentityRow>[] = [
+    {
+      id: 'identity_name',
+      header: 'Identity name',
+      thClassName: 'configs__th',
+      cell: (row) => {
+        const name = String(row.identity_name ?? '')
+        const sub = String(row.display_name ?? '')
+        return (
+          <div>
+            <span className="configs__identityName">{name}</span>
+            {sub ? <span className="configs__identitySub">{sub}</span> : null}
+          </div>
+        )
+      },
+    },
+    {
+      id: 'identity_type',
+      header: 'Type',
+      thClassName: 'configs__th',
+      cell: (row) => <span className="configs__pill">{formatIdentityType(String(row.identity_type ?? ''))}</span>,
+    },
+    {
+      id: 'is_active',
+      header: 'Status',
+      thClassName: 'configs__th',
+      cell: (row) => {
+        const active = Boolean(row.is_active)
+        return (
+          <span className={`configs__status${active ? '' : ' configs__status--inactive'}`}>
+            <span className="configs__statusDot" aria-hidden />
+            {active ? 'Active' : 'Inactive'}
+          </span>
+        )
+      },
+    },
+  ]
+
+  const filterColumns: DataTableColumn<FilterRow>[] = [
+    {
+      id: 'filter_name',
+      header: 'Filter name',
+      thClassName: 'configs__th',
+      tdClassName: 'configs__cellAccent',
+    },
+    {
+      id: 'service_name',
+      header: 'Service name',
+      thClassName: 'configs__th',
+      tdClassName: 'configs__cellMuted',
+    },
+    {
+      id: 'violation_type',
+      header: 'Violation type',
+      thClassName: 'configs__th',
+      tdClassName: 'configs__cellViolation',
+      cell: (row) => String(row.violation_type ?? '').toUpperCase(),
+    },
+  ]
+
+  if (loading && !workspaces.length && !identities.length && !filters.length) {
+    return <LoadingIndicator size={24} color="white" />
+  }
 
   return (
-    <>
-      <h1 style={{ marginTop: 0 }}>Configs</h1>
+    <div className="configs">
+      <h1 style={{ marginTop: 0 }}>Configurations</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
         Catalog, schema, and warehouse path are sent with every API request. Add and edit workspaces, approved identities, and assets to track below.
       </p>
-      {error && <div style={{ color: '#f87171', marginBottom: '1rem' }}>{error}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-        <div style={formRow}>
-          <label style={formLabel}>Governance catalog</label>
-          <input
-            value={config.catalog}
-            onChange={(e) => setConfig((c) => ({ ...c, catalog: e.target.value }))}
-            placeholder="e.g. karthik_auto_validator_1"
-            style={formInput}
-          />
+      {error ? <div className="configs__error">{error}</div> : null}
+      {loading ? <div className="configs__loading"><LoadingIndicator size={24} color="white" /></div> : null}
+      <section className="configs__card">
+        <div className="configs__cardHeader">
+          <div className="configs__cardTitleRow">
+            <div className="configs__cardIcon">{ICON_GLOBE}</div>
+            <div>
+              <h2 className="configs__cardTitle">Global Directives</h2>
+              <p className="configs__cardSubtitle">Core parameters</p>
+            </div>
+          </div>
+          <button type="button" className="configs__btnPrimary" onClick={saveConfig}>
+            Save and reload
+          </button>
         </div>
-        <div style={formRow}>
-          <label style={formLabel}>Governance schema</label>
-          <input
-            value={config.schema}
-            onChange={(e) => setConfig((c) => ({ ...c, schema: e.target.value }))}
-            placeholder="e.g. govern_bot"
-            style={formInput}
-          />
+        <div className="configs__grid2">
+          <div className="configs__field">
+            <label className="configs__label" htmlFor="cfg-catalog">
+              Governance catalog
+            </label>
+            <input
+              id="cfg-catalog"
+              className="configs__input"
+              value={config.catalog}
+              onChange={(e) => setConfig((c) => ({ ...c, catalog: e.target.value }))}
+              placeholder="e.g. main_governance_v4"
+            />
+          </div>
+          <div className="configs__field">
+            <label className="configs__label" htmlFor="cfg-schema">
+              Governance schema
+            </label>
+            <input
+              id="cfg-schema"
+              className="configs__input"
+              value={config.schema}
+              onChange={(e) => setConfig((c) => ({ ...c, schema: e.target.value }))}
+              placeholder="e.g. iso_certified_audit"
+            />
+          </div>
+          <div className="configs__field configs__grid2FullRow">
+            <label className="configs__label" htmlFor="cfg-warehouse">
+              Warehouse HTTP path
+            </label>
+            <div className="configs__inputWrap">
+              <input
+                id="cfg-warehouse"
+                className="configs__input configs__input--accent"
+                value={config.warehouse_http_path}
+                onChange={(e) => setConfig((c) => ({ ...c, warehouse_http_path: e.target.value }))}
+                placeholder="/sql/1.0/warehouses/..."
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                className="configs__copyBtn"
+                title="Copy path"
+                aria-label="Copy warehouse path"
+                onClick={copyWarehousePath}
+              >
+                {ICON_COPY}
+              </button>
+            </div>
+          </div>
         </div>
-        <div style={formRow}>
-          <label style={formLabel}>Warehouse HTTP path</label>
-          <input
-            type="password"
-            value={config.warehouse_http_path}
-            onChange={(e) => setConfig((c) => ({ ...c, warehouse_http_path: e.target.value }))}
-            placeholder="/sql/1.0/warehouses/..."
-            style={formInput}
-          />
+      </section>
+
+      <section className="configs__card">
+        <div className="configs__cardHeader">
+          <div className="configs__cardTitleRow">
+            <div className="configs__cardIcon">{ICON_NETWORK}</div>
+            <div>
+              <h2 className="configs__cardTitle">Workspaces tracking</h2>
+              <p className="configs__cardSubtitle">Table: governance_config_workspaces</p>
+            </div>
+          </div>
+          <button type="button" className="configs__btnPrimary" onClick={() => setWsDialog({ open: true, mode: 'add' })}>
+            <span className="configs__btnIcon">{ICON_PLUS}</span>
+            Add workspace
+          </button>
         </div>
+        {workspaces.length === 0 ? (
+          <p className="configs__empty">No workspaces. Add one or configure catalog/schema above and save.</p>
+        ) : (
+          <div className="configs__tableScrollCap">
+            <DataTable<WorkspaceRow>
+              rows={workspaces}
+              columns={workspaceColumns}
+              rowKey={(row, i) => String(row.workspace_id ?? i)}
+              onRowClick={(row) => setWsDialog({ open: true, mode: 'edit', row })}
+            />
+          </div>
+        )}
+      </section>
+
+      <div className="configs__bottomGrid">
+        <section className="configs__card">
+          <div className="configs__cardHeader">
+            <div className="configs__cardTitleRow">
+              <div className="configs__cardIcon">{ICON_FINGERPRINT}</div>
+              <div>
+                <h2 className="configs__cardTitle">Approved identities</h2>
+                <p className="configs__cardSubtitle">Table: governance_preapproved_identities</p>
+              </div>
+            </div>
+            <button type="button" className="configs__btnPrimary" onClick={() => setIdDialog({ open: true, mode: 'add' })}>
+              <span className="configs__btnIcon">{ICON_USER_PLUS}</span>
+              Authorize identity
+            </button>
+          </div>
+          {identities.length === 0 ? (
+            <p className="configs__empty">No identities.</p>
+          ) : (
+            <div className="configs__tableScrollCap">
+              <DataTable<IdentityRow>
+                rows={identities}
+                columns={identityColumns}
+                rowKey={(row, i) => `${String(row.identity_name ?? '')}-${String(row.identity_type ?? '')}-${i}`}
+                onRowClick={(row) => setIdDialog({ open: true, mode: 'edit', row })}
+              />
+            </div>
+          )}
+        </section>
+
+        <section className="configs__card">
+          <div className="configs__cardHeader">
+            <div className="configs__cardTitleRow">
+              <div className="configs__cardIcon">{ICON_FILTER}</div>
+              <div>
+                <h2 className="configs__cardTitle">Asset filters</h2>
+                <p className="configs__cardSubtitle">Table: governance_filters</p>
+              </div>
+            </div>
+            <button type="button" className="configs__btnPrimary" onClick={() => setFilterDialog({ open: true, mode: 'add' })}>
+              <span className="configs__btnIcon">{ICON_PLUS}</span>
+              Add filter
+            </button>
+          </div>
+          {filters.length === 0 ? (
+            <p className="configs__empty">No filters.</p>
+          ) : (
+            <div className="configs__tableScrollCap">
+              <DataTable<FilterRow>
+                rows={filters}
+                columns={filterColumns}
+                rowKey={(row, i) => `${String(row.filter_id ?? row.filter_name ?? i)}-${i}`}
+                onRowClick={(row) => setFilterDialog({ open: true, mode: 'edit', row })}
+              />
+            </div>
+          )}
+        </section>
       </div>
-      <button type="button" onClick={saveConfig} style={{ ...btnPrimary, marginBottom: '2rem' }}>Save and reload data</button>
 
-      {/* --- Workspaces --- */}
-      <h2 style={{ marginBottom: '0.5rem' }}>Workspaces to track</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Table: governance_config_workspaces</p>
-      <button type="button" onClick={() => setWsDialog({ open: true, mode: 'add' })} style={{ ...btnPrimary, marginBottom: '0.75rem' }}>Add workspace</button>
-      {workspaces.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>No workspaces. Add one or configure catalog/schema above and save.</p>
-      ) : (
-        <div style={{ overflowX: 'auto', marginBottom: '2rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #334155' }}>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>workspace_id</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>workspace_name</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>workspace_url</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>enforcement_enabled</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>max_retry_attempts</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workspaces.map((row, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
-                  <td style={{ padding: '0.5rem' }}>{String(row.workspace_id ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.workspace_name ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.workspace_url ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.enforcement_enabled ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.max_retry_attempts ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>
-                    <button type="button" style={tableAction} onClick={() => setWsDialog({ open: true, mode: 'edit', row })}>Edit</button>
-                    <button type="button" style={{ ...tableAction, ...btnDanger }} onClick={() => deleteWorkspace(String(row.workspace_id)).then(loadAll).catch((e) => setError(e.message))}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* --- Identities --- */}
-      <h2 style={{ marginBottom: '0.5rem' }}>Approved identities</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Table: governance_preapproved_identities</p>
-      <button type="button" onClick={() => setIdDialog({ open: true, mode: 'add' })} style={{ ...btnPrimary, marginBottom: '0.75rem' }}>Add identity</button>
-      {identities.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>No identities.</p>
-      ) : (
-        <div style={{ overflowX: 'auto', marginBottom: '2rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #334155' }}>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>identity_name</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>identity_type</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>display_name</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>is_active</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {identities.map((row, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
-                  <td style={{ padding: '0.5rem' }}>{String(row.identity_name ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.identity_type ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.display_name ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.is_active ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>
-                    <button type="button" style={tableAction} onClick={() => setIdDialog({ open: true, mode: 'edit', row })}>Edit</button>
-                    <button type="button" style={{ ...tableAction, ...btnDanger }} onClick={() => deleteIdentity(String(row.identity_name), String(row.identity_type)).then(loadAll).catch((e) => setError(e.message))}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* --- Filters (assets to track) --- */}
-      <h2 style={{ marginBottom: '0.5rem' }}>Assets to track (filters)</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Table: governance_filters</p>
-      <button type="button" onClick={() => setFilterDialog({ open: true, mode: 'add' })} style={{ ...btnPrimary, marginBottom: '0.75rem' }}>Add filter</button>
-      {filters.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)' }}>No filters.</p>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #334155' }}>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>filter_name</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>service_name</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>violation_type</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>remediation_action</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>is_active</th>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filters.map((row, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
-                  <td style={{ padding: '0.5rem' }}>{String(row.filter_name ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.service_name ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.violation_type ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.remediation_action ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>{String(row.is_active ?? '')}</td>
-                  <td style={{ padding: '0.5rem' }}>
-                    <button type="button" style={tableAction} onClick={() => setFilterDialog({ open: true, mode: 'edit', row })}>Edit</button>
-                    <button type="button" style={{ ...tableAction, ...btnDanger }} onClick={() => deleteFilter(String(row.filter_id)).then(loadAll).catch((e) => setError(e.message))}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Workspace dialog */}
-      {wsDialog.open && (
+      {wsDialog.open ? (
         <WorkspaceDialog
           mode={wsDialog.mode}
           row={wsDialog.row}
           onClose={() => setWsDialog({ open: false, mode: 'add' })}
-          onSaved={() => { setWsDialog({ open: false, mode: 'add' }); loadAll() }}
+          onSaved={() => {
+            setWsDialog({ open: false, mode: 'add' })
+            loadAll()
+          }}
           onError={setError}
         />
-      )}
-      {idDialog.open && (
+      ) : null}
+      {idDialog.open ? (
         <IdentityDialog
           mode={idDialog.mode}
           row={idDialog.row}
           onClose={() => setIdDialog({ open: false, mode: 'add' })}
-          onSaved={() => { setIdDialog({ open: false, mode: 'add' }); loadAll() }}
+          onSaved={() => {
+            setIdDialog({ open: false, mode: 'add' })
+            loadAll()
+          }}
           onError={setError}
         />
-      )}
-      {filterDialog.open && (
+      ) : null}
+      {filterDialog.open ? (
         <FilterDialog
           mode={filterDialog.mode}
           row={filterDialog.row}
           onClose={() => setFilterDialog({ open: false, mode: 'add' })}
-          onSaved={() => { setFilterDialog({ open: false, mode: 'add' }); loadAll() }}
+          onSaved={() => {
+            setFilterDialog({ open: false, mode: 'add' })
+            loadAll()
+          }}
           onError={setError}
         />
-      )}
-    </>
-  )
-}
-
-function WorkspaceDialog({
-  mode,
-  row,
-  onClose,
-  onSaved,
-  onError,
-}: {
-  mode: 'add' | 'edit'
-  row?: WorkspaceRow
-  onClose: () => void
-  onSaved: () => void
-  onError: (s: string | null) => void
-}) {
-  const [workspace_id, setWorkspaceId] = useState('')
-  const [workspace_name, setWorkspaceName] = useState('')
-  const [workspace_url, setWorkspaceUrl] = useState('')
-  const [warehouse_id, setWarehouseId] = useState('')
-  const [enforcement_enabled, setEnforcementEnabled] = useState(false)
-  const [notification_email, setNotificationEmail] = useState('')
-  const [notification_slack_webhook, setNotificationSlackWebhook] = useState('')
-  const [enabled_object_types, setEnabledObjectTypes] = useState('')
-  const [max_retry_attempts, setMaxRetryAttempts] = useState(3)
-  const [created_by, setCreatedBy] = useState('api')
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (row) {
-      setWorkspaceId(String(row.workspace_id ?? ''))
-      setWorkspaceName(String(row.workspace_name ?? ''))
-      setWorkspaceUrl(String(row.workspace_url ?? ''))
-      setWarehouseId(String(row.warehouse_id ?? ''))
-      setEnforcementEnabled(Boolean(row.enforcement_enabled))
-      setNotificationEmail(String(row.notification_email ?? ''))
-      setNotificationSlackWebhook(String(row.notification_slack_webhook ?? ''))
-      setEnabledObjectTypes(arrToStr(arrFrom(row.enabled_object_types)))
-      setMaxRetryAttempts(Number(row.max_retry_attempts) || 3)
-      setCreatedBy(String(row.created_by ?? 'api'))
-    } else {
-      setWorkspaceId('')
-      setWorkspaceName('')
-      setWorkspaceUrl('')
-      setWarehouseId('')
-      setEnforcementEnabled(false)
-      setNotificationEmail('')
-      setNotificationSlackWebhook('')
-      setEnabledObjectTypes('notebook, query, job')
-      setMaxRetryAttempts(3)
-      setCreatedBy('api')
-    }
-  }, [row])
-
-  const handleSubmit = () => {
-    const body = {
-      workspace_id,
-      workspace_name,
-      workspace_url,
-      warehouse_id: warehouse_id || null,
-      enforcement_enabled,
-      notification_email: notification_email || null,
-      notification_slack_webhook: notification_slack_webhook || null,
-      enabled_object_types: arrFrom(enabled_object_types),
-      max_retry_attempts,
-      created_by,
-    }
-    setSaving(true)
-    onError(null)
-    const p = mode === 'add' ? createWorkspace(body) : updateWorkspace(workspace_id, body)
-    p.then(onSaved).catch((e) => onError(e.message)).finally(() => setSaving(false))
-  }
-
-  return (
-    <div style={dialogOverlay} onClick={onClose}>
-      <div style={dialogBox} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginTop: 0 }}>{mode === 'add' ? 'Add workspace' : 'Edit workspace'}</h3>
-        <div style={formRow}>
-          <label style={formLabel}>workspace_id *</label>
-          <input value={workspace_id} onChange={(e) => setWorkspaceId(e.target.value)} style={formInput} placeholder="e.g. ws-123" disabled={mode === 'edit'} />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>workspace_name *</label>
-          <input value={workspace_name} onChange={(e) => setWorkspaceName(e.target.value)} style={formInput} placeholder="My workspace" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>workspace_url</label>
-          <input value={workspace_url} onChange={(e) => setWorkspaceUrl(e.target.value)} style={formInput} placeholder="https://..." />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>warehouse_id</label>
-          <input value={warehouse_id} onChange={(e) => setWarehouseId(e.target.value)} style={formInput} placeholder="optional" />
-        </div>
-        <div style={formRow}>
-          <label style={{ ...formLabel, display: 'flex', alignItems: 'center' }}>
-            <input type="checkbox" checked={enforcement_enabled} onChange={(e) => setEnforcementEnabled(e.target.checked)} style={formCheckbox} />
-            enforcement_enabled
-          </label>
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>notification_email</label>
-          <input type="email" value={notification_email} onChange={(e) => setNotificationEmail(e.target.value)} style={formInput} placeholder="optional" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>notification_slack_webhook</label>
-          <input value={notification_slack_webhook} onChange={(e) => setNotificationSlackWebhook(e.target.value)} style={formInput} placeholder="optional" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>enabled_object_types (comma-separated)</label>
-          <input value={enabled_object_types} onChange={(e) => setEnabledObjectTypes(e.target.value)} style={formInput} placeholder="notebook, query, job" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>max_retry_attempts</label>
-          <input type="number" min={0} value={max_retry_attempts} onChange={(e) => setMaxRetryAttempts(Number(e.target.value) || 0)} style={formInput} />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>created_by</label>
-          <input value={created_by} onChange={(e) => setCreatedBy(e.target.value)} style={formInput} />
-        </div>
-        <div style={buttonRow}>
-          <button type="button" style={btnPrimary} onClick={handleSubmit} disabled={saving || !workspace_id.trim() || !workspace_name.trim()}>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" style={btnSecondary} onClick={onClose}>Cancel</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function IdentityDialog({
-  mode,
-  row,
-  onClose,
-  onSaved,
-  onError,
-}: {
-  mode: 'add' | 'edit'
-  row?: IdentityRow
-  onClose: () => void
-  onSaved: () => void
-  onError: (s: string | null) => void
-}) {
-  const [identity_name, setIdentityName] = useState('')
-  const [identity_type, setIdentityType] = useState('USER')
-  const [display_name, setDisplayName] = useState('')
-  const [can_manage_resources, setCanManageResources] = useState(false)
-  const [can_manage_permissions, setCanManagePermissions] = useState(false)
-  const [approved_actions, setApprovedActions] = useState('')
-  const [is_active, setIsActive] = useState(true)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (row) {
-      setIdentityName(String(row.identity_name ?? ''))
-      setIdentityType(String(row.identity_type ?? 'USER'))
-      setDisplayName(String(row.display_name ?? ''))
-      setCanManageResources(Boolean(row.can_manage_resources))
-      setCanManagePermissions(Boolean(row.can_manage_permissions))
-      setApprovedActions(arrToStr(arrFrom(row.approved_actions)))
-      setIsActive(Boolean(row.is_active))
-    } else {
-      setIdentityName('')
-      setIdentityType('USER')
-      setDisplayName('')
-      setCanManageResources(false)
-      setCanManagePermissions(false)
-      setApprovedActions('ALL')
-      setIsActive(true)
-    }
-  }, [row])
-
-  const handleSubmit = () => {
-    const body = {
-      identity_name,
-      identity_type,
-      display_name,
-      can_manage_resources,
-      can_manage_permissions,
-      approved_actions: arrFrom(approved_actions),
-      is_active,
-    }
-    setSaving(true)
-    onError(null)
-    const p = mode === 'add' ? createIdentity(body) : updateIdentity(identity_name, identity_type, body)
-    p.then(onSaved).catch((e) => onError(e.message)).finally(() => setSaving(false))
-  }
-
-  return (
-    <div style={dialogOverlay} onClick={onClose}>
-      <div style={dialogBox} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginTop: 0 }}>{mode === 'add' ? 'Add approved identity' : 'Edit identity'}</h3>
-        <div style={formRow}>
-          <label style={formLabel}>identity_name *</label>
-          <input value={identity_name} onChange={(e) => setIdentityName(e.target.value)} style={formInput} placeholder="user@example.com" disabled={mode === 'edit'} />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>identity_type *</label>
-          <select value={identity_type} onChange={(e) => setIdentityType(e.target.value)} style={formInput} disabled={mode === 'edit'}>
-            <option value="USER">USER</option>
-            <option value="GROUP">GROUP</option>
-            <option value="SERVICE_PRINCIPAL">SERVICE_PRINCIPAL</option>
-          </select>
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>display_name</label>
-          <input value={display_name} onChange={(e) => setDisplayName(e.target.value)} style={formInput} placeholder="optional" />
-        </div>
-        <div style={formRow}>
-          <label style={{ ...formLabel, display: 'flex', alignItems: 'center' }}>
-            <input type="checkbox" checked={can_manage_resources} onChange={(e) => setCanManageResources(e.target.checked)} style={formCheckbox} />
-            can_manage_resources
-          </label>
-        </div>
-        <div style={formRow}>
-          <label style={{ ...formLabel, display: 'flex', alignItems: 'center' }}>
-            <input type="checkbox" checked={can_manage_permissions} onChange={(e) => setCanManagePermissions(e.target.checked)} style={formCheckbox} />
-            can_manage_permissions
-          </label>
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>approved_actions (comma-separated, e.g. ALL or notebook, query, job)</label>
-          <input value={approved_actions} onChange={(e) => setApprovedActions(e.target.value)} style={formInput} placeholder="ALL" />
-        </div>
-        <div style={formRow}>
-          <label style={{ ...formLabel, display: 'flex', alignItems: 'center' }}>
-            <input type="checkbox" checked={is_active} onChange={(e) => setIsActive(e.target.checked)} style={formCheckbox} />
-            is_active
-          </label>
-        </div>
-        <div style={buttonRow}>
-          <button type="button" style={btnPrimary} onClick={handleSubmit} disabled={saving || !identity_name.trim()}>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" style={btnSecondary} onClick={onClose}>Cancel</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function FilterDialog({
-  mode,
-  row,
-  onClose,
-  onSaved,
-  onError,
-}: {
-  mode: 'add' | 'edit'
-  row?: FilterRow
-  onClose: () => void
-  onSaved: () => void
-  onError: (s: string | null) => void
-}) {
-  const [filter_name, setFilterName] = useState('')
-  const [service_name, setServiceName] = useState('')
-  const [action_name, setActionName] = useState('')
-  const [object_type, setObjectType] = useState('')
-  const [object_id_expr, setObjectIdExpr] = useState('')
-  const [object_name_expr, setObjectNameExpr] = useState('')
-  const [violation_type, setViolationType] = useState('')
-  const [remediation_action, setRemediationAction] = useState('')
-  const [is_active, setIsActive] = useState(true)
-  const [description, setDescription] = useState('')
-  const [saving, setSaving] = useState(false)
-  const editFilterId = row ? String(row.filter_id ?? '') : ''
-
-  useEffect(() => {
-    if (row) {
-      setFilterName(String(row.filter_name ?? ''))
-      setServiceName(String(row.service_name ?? ''))
-      setActionName(String(row.action_name ?? ''))
-      setObjectType(String(row.object_type ?? ''))
-      setObjectIdExpr(String(row.object_id_expr ?? ''))
-      setObjectNameExpr(String(row.object_name_expr ?? ''))
-      setViolationType(String(row.violation_type ?? ''))
-      setRemediationAction(String(row.remediation_action ?? ''))
-      setIsActive(Boolean(row.is_active))
-      setDescription(String(row.description ?? ''))
-    } else {
-      setFilterName('')
-      setServiceName('')
-      setActionName('')
-      setObjectType('')
-      setObjectIdExpr('')
-      setObjectNameExpr('')
-      setViolationType('')
-      setRemediationAction('')
-      setIsActive(true)
-      setDescription('')
-    }
-  }, [row])
-
-  const handleSubmit = () => {
-    const body = {
-      filter_name,
-      service_name,
-      action_name,
-      object_type,
-      object_id_expr,
-      object_name_expr,
-      violation_type,
-      remediation_action,
-      is_active,
-      description,
-    }
-    setSaving(true)
-    onError(null)
-    const p = mode === 'add' ? createFilter(body) : updateFilter(editFilterId, body)
-    p.then(onSaved).catch((e) => onError(e.message)).finally(() => setSaving(false))
-  }
-
-  return (
-    <div style={dialogOverlay} onClick={onClose}>
-      <div style={dialogBox} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginTop: 0 }}>{mode === 'add' ? 'Add filter (asset to track)' : 'Edit filter'}</h3>
-        {mode === 'edit' && (
-          <div style={formRow}>
-            <label style={formLabel}>filter_id (read-only)</label>
-            <input value={editFilterId} style={{ ...formInput, opacity: 0.8 }} readOnly />
-          </div>
-        )}
-        <div style={formRow}>
-          <label style={formLabel}>filter_name *</label>
-          <input value={filter_name} onChange={(e) => setFilterName(e.target.value)} style={formInput} placeholder="e.g. notebooks_create" disabled={mode === 'edit'} />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>service_name</label>
-          <input value={service_name} onChange={(e) => setServiceName(e.target.value)} style={formInput} placeholder="e.g. notebooks" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>action_name</label>
-          <input value={action_name} onChange={(e) => setActionName(e.target.value)} style={formInput} placeholder="e.g. create" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>object_type</label>
-          <input value={object_type} onChange={(e) => setObjectType(e.target.value)} style={formInput} placeholder="e.g. notebook" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>object_id_expr</label>
-          <input value={object_id_expr} onChange={(e) => setObjectIdExpr(e.target.value)} style={formInput} placeholder="optional regex/expr" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>object_name_expr</label>
-          <input value={object_name_expr} onChange={(e) => setObjectNameExpr(e.target.value)} style={formInput} placeholder="optional" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>violation_type</label>
-          <input value={violation_type} onChange={(e) => setViolationType(e.target.value)} style={formInput} placeholder="e.g. UNAPPROVED_CREATION" />
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>remediation_action</label>
-          <input value={remediation_action} onChange={(e) => setRemediationAction(e.target.value)} style={formInput} placeholder="e.g. DELETE_RESOURCE" />
-        </div>
-        <div style={formRow}>
-          <label style={{ ...formLabel, display: 'flex', alignItems: 'center' }}>
-            <input type="checkbox" checked={is_active} onChange={(e) => setIsActive(e.target.checked)} style={formCheckbox} />
-            is_active
-          </label>
-        </div>
-        <div style={formRow}>
-          <label style={formLabel}>description</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} style={formInput} rows={2} placeholder="optional" />
-        </div>
-        <div style={buttonRow}>
-          <button type="button" style={btnPrimary} onClick={handleSubmit} disabled={saving || !filter_name.trim()}>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" style={btnSecondary} onClick={onClose}>Cancel</button>
-        </div>
-      </div>
+      ) : null}
     </div>
   )
 }
