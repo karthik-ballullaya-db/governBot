@@ -15,11 +15,22 @@ class AppConfig(BaseModel):
 
 
 class SummaryResponse(BaseModel):
+    # Current window [now - hours, now)
     total: int
     pending: int
     completed: int
+    # Prior window [now - 2*hours, now - hours); used with pct_change_* vs current
+    total_previous: int
+    pending_previous: int
+    completed_previous: int
+    # (current - previous) / previous * 100; null if previous is 0 and current > 0
+    pct_change_total: Optional[float] = None
+    pct_change_pending: Optional[float] = None
+    pct_change_completed: Optional[float] = None
     by_type: list[dict]
     by_object_type: list[dict]
+    by_type_previous: list[dict]
+    by_object_type_previous: list[dict]
     latest: list[dict]
 
 

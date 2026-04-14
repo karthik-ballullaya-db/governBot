@@ -31,8 +31,17 @@ export type SummaryResponse = {
   total: number;
   pending: number;
   completed: number;
+  total_previous: number;
+  pending_previous: number;
+  completed_previous: number;
+  /** (current - previous) / previous * 100; null when previous is 0 and current > 0 */
+  pct_change_total: number | null;
+  pct_change_pending: number | null;
+  pct_change_completed: number | null;
   by_type: { name: string; count: number }[];
   by_object_type: { name: string; count: number }[];
+  by_type_previous: { name: string; count: number }[];
+  by_object_type_previous: { name: string; count: number }[];
   latest: Record<string, unknown>[];
 };
 
@@ -46,8 +55,16 @@ export async function getSummary(hours: number, remediationType: string): Promis
   return r.json();
 }
 
-export async function getSummaryTrend(hours: number, remediationType: string): Promise<SummaryTrendResponse> {
-  const r = await fetch(`${API_BASE}/api/summary/trend?hours=${hours}&remediation_type=${remediationType}`, { headers: headers() });
+export async function getSummaryTrend(
+  hours: number,
+  remediationType: string,
+  window: 'current' | 'previous' = 'current',
+): Promise<SummaryTrendResponse> {
+  const w = encodeURIComponent(window);
+  const r = await fetch(
+    `${API_BASE}/api/summary/trend?hours=${hours}&remediation_type=${encodeURIComponent(remediationType)}&window=${w}`,
+    { headers: headers() },
+  );
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }

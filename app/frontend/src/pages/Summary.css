@@ -32,11 +32,28 @@
 
 .summary__filters {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  gap: 0.5rem 0.75rem;
   position: absolute;
   right: 0.75rem;
   top: 0.75rem;
+  max-width: min(100% - 1.5rem, 42rem);
+}
+
+.summary__filtersExport {
+  display: flex;
+  align-items: center;
+}
+
+.summary__filtersExportError {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+  color: #f87171;
+  font-size: 0.8125rem;
+  line-height: 1.3;
 }
 
 .summary__filtersRow {
@@ -56,4 +73,156 @@
 .summary__filtersRow select {
   width: 100%;
   border-radius: 4px;
+}
+
+.summaryStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 720px) {
+  .summaryStatsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.summaryStatCard {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.summaryStatCard__label {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.summaryStatCard__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.summaryStatCard__value--primary {
+  color: var(--primary);
+}
+
+.summaryStatDelta {
+  font-size: 0.8125rem;
+  margin-top: 0.5rem;
+  line-height: 1.35;
+}
+
+.summaryStatDelta--neutral {
+  color: var(--text-muted);
+}
+
+.summaryStatDelta--down {
+  color: #4ade80;
+}
+
+.summaryStatDelta--up {
+  color: #f87171;
+}
+
+/* Completed: lower is worse (red), higher is better (green) — opposite of totals/pending */
+.summaryStatCard:nth-child(3) .summaryStatDelta--down {
+  color: #f87171;
+}
+
+.summaryStatCard:nth-child(3) .summaryStatDelta--up {
+  color: #4ade80;
+}
+
+/* PDF-only: off-screen clone for html2canvas (not visible in the app) */
+.summaryPdfBrandMount {
+  position: fixed;
+  left: -12000px;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  max-width: 72rem;
+  box-sizing: border-box;
+  padding: 0.75rem 0 0;
+  background: var(--bg);
+  color: var(--text);
+  pointer-events: none;
+}
+
+/* PDF-only: previous-window trend (not shown in the main Summary layout) */
+.summaryPdfPreviousTrendMount {
+  position: fixed;
+  left: -12000px;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  max-width: 72rem;
+  box-sizing: border-box;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  pointer-events: none;
+}
+
+/* PDF-only: by-type / by-object comparison blocks */
+.summaryPdfBreakdownsMount {
+  position: fixed;
+  left: -12000px;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  max-width: 72rem;
+  box-sizing: border-box;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  pointer-events: none;
+}
+
+.summaryPdfCompareBlock {
+  margin-bottom: 2rem;
+}
+
+.summaryPdfCompareBlock h2 {
+  margin-bottom: 0.35rem;
+}
+
+.summaryPdfCompareStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.summaryPdfCompareChartGroup {
+  width: 100%;
+}
+
+.summaryPdfCompareChartHeading {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.summaryPdfComparePlot--pie {
+  height: 260px;
+}
+
+.summaryPdfComparePlot--bar {
+  height: 280px;
+}
+
+/* Region captured for PDF — explicit background so html2canvas matches the Summary UI */
+.summaryExportCapture {
+  background: var(--bg);
+  color: var(--text);
+  padding: 0.5rem 0 1.5rem;
+  border-radius: 8px;
+}
+
+.summaryTrendPlot {
+  width: 100%;
 }

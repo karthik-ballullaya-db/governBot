@@ -233,7 +233,7 @@ export default function Configs() {
   ]
 
   if (loading && !workspaces.length && !identities.length && !filters.length) {
-    return <LoadingIndicator size={24} color="white" />
+    return <LoadingIndicator size={36} color="white" />
   }
 
   return (

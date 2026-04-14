@@ -1,6 +1,6 @@
 """Shared SQL string helpers and JSON-safe row conversion for API routes."""
 import math
-from typing import Any
+from typing import Any, Optional
 
 NUM_TREND_PERIODS = 5
 
@@ -70,3 +70,12 @@ def rows_json_safe(rows: list[dict]) -> list[dict]:
         for k in list(r.keys()):
             r[k] = json_safe(r[k])
     return rows
+
+
+def pct_change_vs_previous(current: int, previous: int) -> Optional[float]:
+    """Return (current - previous) / previous * 100, or None when there is no prior baseline."""
+    if previous > 0:
+        return (current - previous) / previous * 100.0
+    if current == 0:
+        return 0.0
+    return None
