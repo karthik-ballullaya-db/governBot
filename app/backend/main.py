@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 
-from backend.api import actions_center, common, configs, summary
+from backend.api import actions_center, common, configs, genie, summary
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +39,7 @@ app.include_router(common.router)
 app.include_router(summary.router)
 app.include_router(actions_center.router)
 app.include_router(configs.router)
+app.include_router(genie.router)
 
 # Serve React build when present; always serve index.html for SPA routes so /summary, /configs etc. don't 404
 # Resolve to absolute path so it works regardless of process cwd (e.g. run from app/ vs repo root).

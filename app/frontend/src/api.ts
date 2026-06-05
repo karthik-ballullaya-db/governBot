@@ -6,10 +6,12 @@ function headers(): Record<string, string> {
   const catalog = localStorage.getItem('governbot_catalog') || '';
   const schema = localStorage.getItem('governbot_schema') || '';
   const path = localStorage.getItem('governbot_warehouse_http_path') || '';
+  const genieSpaceId = localStorage.getItem('governbot_genie_space_id') || '';
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
   if (catalog) h['X-Catalog'] = catalog;
   if (schema) h['X-Schema'] = schema;
   if (path) h['X-Warehouse-HTTP-Path'] = path;
+  if (genieSpaceId) h['X-Genie-Space-Id'] = genieSpaceId;
   return h;
 }
 
@@ -240,4 +242,105 @@ export async function deleteFilter(filterId: string): Promise<void> {
     headers: headers(),
   });
   if (!r.ok) throw new Error(await r.text());
+}
+
+export type GenieSpaceInfo = { space_id: string; configured: boolean };
+
+export type GenieQueryResult = {
+  statement: string;
+  columns: string[];
+  rows: unknown[][];
+  row_count: number;
+  truncated: boolean;
+};
+
+export type GenieStep = {
+  type: 'text' | 'query';
+  title: string | null;
+  description: string | null;
+  content: string | null;
+  statement: string | null;
+  row_count: number | null;
+};
+
+export type GenieAskResponse = {
+  conversation_id: string;
+  message_id: string;
+  status: string;
+  text: string | null;
+  query: GenieQueryResult | null;
+  steps: GenieStep[];
+  followups: string[];
+  error: string | null;
+};
+
+export async function getGenieSpace(): Promise<GenieSpaceInfo> {
+  const r = await fetch(`${API_BASE}/api/genie/space`, { headers: headers() });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function askGenie(
+  question: string,
+  conversationId?: string | null,
+): Promise<GenieAskResponse> {
+  const r = await fetch(`${API_BASE}/api/genie/ask`, {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify({ question, conversation_id: conversationId ?? null }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export type GenieStreamEvent =
+  | { type: 'started'; conversation_id: string; message_id: string }
+  | { type: 'status'; status: string }
+  | { type: 'step'; step: GenieStep }
+  | { type: 'final'; response: GenieAskResponse }
+  | { type: 'error'; error: string };
+
+export async function askGenieStream(
+  question: string,
+  conversationId: string | null,
+  onEvent: (event: GenieStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const r = await fetch(`${API_BASE}/api/genie/ask/stream`, {
+    method: 'POST',
+    headers: { ...headers(), Accept: 'text/event-stream' },
+    body: JSON.stringify({ question, conversation_id: conversationId ?? null }),
+    signal,
+  });
+  if (!r.ok || !r.body) {
+    const text = await r.text().catch(() => '');
+    throw new Error(text || `HTTP ${r.status}`);
+  }
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let sep = buffer.indexOf('\n\n');
+    while (sep >= 0) {
+      const block = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+      sep = buffer.indexOf('\n\n');
+      const dataLines = block
+        .split('\n')
+        .filter((l) => l.startsWith('data: '))
+        .map((l) => l.slice(6));
+      if (dataLines.length === 0) continue;
+      const payload = dataLines.join('\n').trim();
+      if (!payload) continue;
+      try {
+        const evt = JSON.parse(payload) as GenieStreamEvent;
+        onEvent(evt);
+      } catch {
+        // skip malformed
+      }
+    }
+  }
 }

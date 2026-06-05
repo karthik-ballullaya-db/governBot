@@ -18,6 +18,8 @@ env:
     value: "/sql/1.0/warehouses/8baced1ff014912d"
   - name: GOVERNANCE_REQUIRE_OBO
     value: "1"
+  - name: GENIE_SPACE_ID
+    value: "01f1420c0b091b64a933e4877b8a4456"
 
 resources:
   - name: sql-warehouse
@@ -29,3 +31,4 @@ user_authorization:
   scopes:
     - sql
     - catalog.tables:read
+    - dashboards.genie

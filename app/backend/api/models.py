@@ -134,6 +134,46 @@ class IdentityBody(BaseModel):
     is_active: bool = True
 
 
+class GenieSpaceInfo(BaseModel):
+    space_id: str
+    configured: bool
+
+
+class GenieAskRequest(BaseModel):
+    question: str
+    conversation_id: Optional[str] = None
+    space_id: Optional[str] = None
+
+
+class GenieQueryResult(BaseModel):
+    statement: str = ""
+    columns: list[str] = []
+    rows: list[list[Any]] = []
+    row_count: int = 0
+    truncated: bool = False
+
+
+class GenieStep(BaseModel):
+    """A single attachment from Genie's response, preserving reasoning order."""
+    type: str  # "text" | "query"
+    title: Optional[str] = None
+    description: Optional[str] = None
+    content: Optional[str] = None      # for text attachments
+    statement: Optional[str] = None    # SQL, for query attachments
+    row_count: Optional[int] = None    # for query attachments, when known
+
+
+class GenieAskResponse(BaseModel):
+    conversation_id: str
+    message_id: str
+    status: str
+    text: Optional[str] = None
+    query: Optional[GenieQueryResult] = None
+    steps: list[GenieStep] = []
+    followups: list[str] = []
+    error: Optional[str] = None
+
+
 class FilterBody(BaseModel):
     filter_id: Optional[str] = None
     filter_name: str

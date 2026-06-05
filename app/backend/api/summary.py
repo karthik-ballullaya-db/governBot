@@ -191,9 +191,9 @@ def _summary_trend_rows(
 
     sql_query = f"""
             SELECT
-                least({NUM_TREND_PERIODS - 1}, greatest(0, cast(floor(
-                    (unix_timestamp(created_at) - (unix_timestamp(current_timestamp()) - {anchor_sec})) / {bucket_sec}
-                ) as int))) AS period_idx,
+                least({NUM_TREND_PERIODS}, greatest(0, abs(cast(floor(
+                    (unix_timestamp(created_at) - unix_timestamp(current_timestamp())) / {bucket_sec}
+                ) as int)))) - 1 AS period_idx,
                 count(case when remediation_status NOT IN ('COMPLETED', 'SKIPPED') then 1 else null end) AS failed,
                 count(*) AS generated
             FROM {actions} actions
@@ -210,10 +210,8 @@ def _summary_trend_rows(
         }
 
     data = run_summary_trend()
-    prev_generated = 0
-    prev_failed = 0
     for period in range(NUM_TREND_PERIODS - 1, -1, -1):
-        row = data.get(period, [prev_generated, prev_failed])
+        row = data.get(period, [0, 0])
         trend.append(
             {
                 "period": (label_base - timedelta(seconds=period * bucket_sec)).strftime("%Y-%m-%d %H:%M"),
@@ -222,8 +220,6 @@ def _summary_trend_rows(
                 "completed": row[0] - row[1],
             }
         )
-        prev_generated = row[0]
-        prev_failed = row[1]
     return trend
 
 

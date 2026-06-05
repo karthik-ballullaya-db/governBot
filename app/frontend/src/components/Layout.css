@@ -20,8 +20,6 @@
 }
 
 .layout__navScroll {
-  --layout-nav-row-h: 3.5rem; /* one row: padding + icon/text; tweak if NavItem padding changes */
-  max-height: calc(3.5 * var(--layout-nav-row-h));
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;

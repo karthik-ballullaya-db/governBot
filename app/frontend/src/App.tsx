@@ -5,6 +5,7 @@ import { LoadingIndicator } from './components/LoadingIndicator'
 
 const Summary = lazy(() => import('./pages/Summary'))
 const ActionsCenter = lazy(() => import('./pages/ActionsCenter'))
+const GenieSpace = lazy(() => import('./pages/GenieSpace'))
 const Configs = lazy(() => import('./pages/Configs'))
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/" element={<Summary />} />
           <Route path="/summary" element={<Summary />} />
           <Route path="/actions" element={<ActionsCenter />} />
+          <Route path="/genie" element={<GenieSpace />} />
           <Route path="/configs" element={<Configs />} />
         </Routes>
       </Suspense>

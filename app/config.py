@@ -15,3 +15,7 @@ def get_schema() -> str:
 
 def get_warehouse_http_path() -> str:
     return (os.environ.get("DATABRICKS_APP_WAREHOUSE_HTTP_PATH") or "").strip()
+
+
+def get_genie_space_id() -> str:
+    return (os.environ.get("GENIE_SPACE_ID") or "").strip()
